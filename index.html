@@ -1229,14 +1229,20 @@
         }
 
         if (!documents.value || documents.value.length === 0) {
-          // Initialize first default draft
+          // Initialize default drafts including the 50-round test experiment
+          const fiftyRoundsDoc = {
+            id: 'doc_50_rounds',
+            title: '从决定到上线不到1小时 (50抽连测)',
+            content: '他决定做这个项目开始到上线只用了不到1小时。当他按下回车的瞬间，屏幕上的代码并没有上传到云端，而是正在逐行抹除现实里他存在过的所有物理痕迹。他回忆起小时候父亲藏在阁楼夹层里的那些没有封皮的手稿，里面的每一个乱码字符竟与眼前的代码结构完全重合。窗外的天空并没有迎来破晓，而是像破损的视网膜一样裂开了一条贯穿地平线的幽深缝隙。墙壁上的石灰像干瘪的纸钱一样剥落，露出后面盘根错节、宛如人体毛细血管般交织涌动的铜质传导线缆。他以为自己写的是前端界面，但调用的每一个底层端口，都在精准引爆某座现实水坝的泄洪闸门。机箱风扇发出类似垂死者肺叶破损的哮喘声，空气中弥漫着只有童年老旧录音带受热融化时才有的焦甜味。整座大楼的供电瞬间跳闸，唯独他的显示器还在以令人不安的高频向外放射着紫黑色的冷光。窗外的暴雨每一滴都在半空中静止成了悬浮的水银微粒，折射出无数个正在这间屋子里同时做出不同抉择的他自己。网页上突然跳出一个访客计数器：当前在线人数 1，而那个正在浏览他刚刚上线的作品的人，IP 地址就在他正后方半米处。屋里安静得能听见尘埃坠落在荧光屏上的微弱撞击声，每一粒微尘里似乎都倒映着一个微缩的世界在走向崩塌。门铃急促地长鸣了五声，门镜外站着的快递员戴着湿透的防毒面具，手里抱着一个正在微微发烫并渗出黑水的纸箱。屏幕上的字符开始像受惊的黑色蜉蝣一样离开液晶基板，盘旋着飞进他的瞳孔，在视神经表面重新排版。终端里弹出一行绿字：“感谢你完成了封印的最后一行逻辑，它现在自由了。”',
+            updatedAt: Date.now()
+          };
           const initialDoc = {
             id: 'doc_' + Date.now(),
             title: '尘封木门与分岔',
             content: '他推开那扇尘封已久的木门，闻到了一股潮湿的墨水味。',
-            updatedAt: Date.now()
+            updatedAt: Date.now() - 1000
           };
-          documents.value = [initialDoc];
+          documents.value = [fiftyRoundsDoc, initialDoc];
         }
 
         const lastActiveId = localStorage.getItem('fork_deck_current_doc_id');
