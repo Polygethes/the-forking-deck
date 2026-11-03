@@ -978,7 +978,7 @@
       @mousedown.stop
     >
       <div class="caret-menu-header">
-        <span>可能的发展方向 ({{ cards.length }})</span>
+        <span>{{ cards[0] && cards[0].offline ? '离线引子 · 配置 API 获得针对本句的续写' : '可能的发展方向 (' + cards.length + ')' }}</span>
         <div style="display:flex; gap:10px; align-items:center;">
           <span style="font-size:10px; cursor:pointer; text-decoration:underline;" @click="triggerDraw">
             {{ isDrawing ? '抽卡中...' : '[ 重新抽一批 ]' }}
@@ -1010,7 +1010,7 @@
       @click.self="dismissCeremony"
     >
       <div class="tarot-subtitle">
-        {{ ceremonyState === 'spinning' ? '— THE WHEEL OF POSSIBILITIES IS TURNING —' : '— 4 DIVERGENT DESTINIES REVEALED —' }}
+        {{ ceremonyState === 'spinning' ? '— THE WHEEL OF POSSIBILITIES IS TURNING —' : (cards[0] && cards[0].offline ? '— 离线引子 · 配置 API 获得针对本句的续写 —' : '— ' + cards.length + ' DIVERGENT DESTINIES REVEALED —') }}
       </div>
 
       <!-- Phase 1: 3D Spinning Tarot Card -->
@@ -1428,60 +1428,202 @@
         updateCaretPosition();
       };
 
-      const getSentenceAtCursor = () => {
-        if (!editorRef.value) return '';
+      // ========================================================
+      // DIMENSION LIBRARY (四大张力家族，每次各抽一个子维度)
+      // starters 是离线引子：没有 API 时给出的句首，{ta} 会替换成前文的主要人称
+      // ========================================================
+      const DIMENSION_FAMILIES = [
+        {
+          type: '反转',
+          dims: [
+            {
+              typeName: '预设打破',
+              brief: '推翻读者或角色刚刚建立的认知，让这句话里最确定的事变得可疑甚至完全相反',
+              starters: [
+                { title: '信念倒转', text: '可直到这一刻{ta}才意识到，自己一直深信不疑的那件事，从一开始就是反的——' },
+                { title: '集体误判', text: '但所有人都弄错了一件事，包括{ta}自己：' }
+              ]
+            },
+            {
+              typeName: '身份错位',
+              brief: '揭示某个人或物并非看上去的那样，身份、立场或关系发生倒置',
+              starters: [
+                { title: '面具剥落', text: '{ta}忽然明白，眼前这个人从来就不是{ta}以为的那个人，而是——' },
+                { title: '骗局反噬', text: '很久以后{ta}才知道，那天真正被骗的人，是{ta}自己。' }
+              ]
+            },
+            {
+              typeName: '因果倒置',
+              brief: '原以为的原因其实是结果，或角色的行动恰恰招致了他想避免的事',
+              starters: [
+                { title: '自我应验', text: '{ta}一直以为是这件事害了{ta}，其实恰恰是{ta}为了躲开它而做的一切，才让它发生——' },
+                { title: '倒果为因', text: '{ta}后来才想明白，不是那件事发生了{ta}才来到这里，而是{ta}的到来让它发生了。' }
+              ]
+            }
+          ]
+        },
+        {
+          type: '深潜',
+          dims: [
+            {
+              typeName: '感官印记',
+              brief: '停在此刻，放大一个具体的感官细节，让它牵出情绪或记忆',
+              starters: [
+                { title: '气味先行', text: '那一刻{ta}最先注意到的，不是眼前的一切，而是一种气味——' },
+                { title: '细微之声', text: '空气里有一种极轻的声音，轻到{ta}起初以为是自己的错觉，像是——' }
+              ]
+            },
+            {
+              typeName: '记忆闪回',
+              brief: '让眼前之物唤起一段过去，埋下与当下有关的伏笔',
+              starters: [
+                { title: '旧日回声', text: '{ta}上一次有这种感觉，是很多年前的那个下午，' },
+                { title: '似曾相识', text: '这个画面{ta}见过——在一个{ta}以为早已忘掉的梦里。' }
+              ]
+            },
+            {
+              typeName: '内心裂缝',
+              brief: '潜入角色没说出口的念头、羞耻或欲望，与表面的行为形成反差',
+              starters: [
+                { title: '无声念头', text: '{ta}脸上没有任何表情，心里却只反复想着一件事：' },
+                { title: '隐秘期待', text: '其实{ta}早就知道会是这样，只是不愿承认，自己心底竟然在期待——' }
+              ]
+            }
+          ]
+        },
+        {
+          type: '危机',
+          dims: [
+            {
+              typeName: '外部突入',
+              brief: '一个外部的人、声音或事件突然闯入，打断当下并制造紧迫威胁',
+              starters: [
+                { title: '不速之音', text: '就在这时，身后传来了一个{ta}绝不该在这里听到的声音——' },
+                { title: '捷足先登', text: '有人比{ta}先到了一步，而且显然已经等了很久。' }
+              ]
+            },
+            {
+              typeName: '倒计时',
+              brief: '引入一个时间限制或不可逆的期限，让局势骤然收紧',
+              starters: [
+                { title: '十分钟', text: '{ta}只剩下不到十分钟——过了这个时间，一切就再也无法挽回。' },
+                { title: '为时已晚', text: '{ta}看了一眼时间，猛地意识到，已经太晚了：' }
+              ]
+            },
+            {
+              typeName: '失控连锁',
+              brief: '一个小失误或意外引发连锁反应，局面开始滑向不可收拾',
+              starters: [
+                { title: '蝴蝶效应', text: '{ta}只是犯了一个微不足道的小错，可接下来发生的事，没有一件还在{ta}的掌控之中——' },
+                { title: '连锁崩塌', text: '第一声碎裂之后，紧接着是第二声、第三声——' }
+              ]
+            }
+          ]
+        },
+        {
+          type: '超验',
+          dims: [
+            {
+              typeName: '荒诞诗性',
+              brief: '以不讲道理却精确的诗性逻辑改写现实，让日常裂开一道超现实的口子',
+              starters: [
+                { title: '世界改写', text: '就在{ta}眨眼的那一瞬，世界悄悄换了一种语法：' },
+                { title: '迟到之影', text: '那天，所有的影子都比它们的主人晚到了一步。' }
+              ]
+            },
+            {
+              typeName: '物性苏醒',
+              brief: '让场景中的某个物件获得意志或生命，以它自己的方式回应角色',
+              starters: [
+                { title: '物之凝视', text: '离{ta}最近的那件东西，似乎正在用自己的方式注视着{ta}——' },
+                { title: '悄然挪近', text: '{ta}没有注意到，周围的物件都在不动声色地，朝{ta}挪近了一点。' }
+              ]
+            },
+            {
+              typeName: '时空褶皱',
+              brief: '时间或空间出现折叠、重复或错位，现实的规则悄然失效',
+              starters: [
+                { title: '第三次', text: '{ta}忽然发现，这一幕已经是第三次发生了——每一次都只有一处细节不同：' },
+                { title: '时间褶皱', text: '时间在这里打了个褶，{ta}一步跨进了——' }
+              ]
+            }
+          ]
+        }
+      ];
+
+      const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      const pickDimensions = () => DIMENSION_FAMILIES.map(f => ({ type: f.type, ...pickRandom(f.dims) }));
+
+      // 取光标前的最后一句作为锚点，并带上前后文
+      const getDrawContext = () => {
+        const doc = getCurrentDoc();
+        const title = doc && doc.title && !doc.title.startsWith('未命名草稿') ? doc.title : '';
+        if (!editorRef.value) return { sentence: '', contextBefore: '', contextAfter: '', title };
+
         const sel = window.getSelection();
+        let textBefore;
+        let contextAfter = '';
         if (!sel || sel.rangeCount === 0 || !editorRef.value.contains(sel.anchorNode)) {
-          return editorRef.value.innerText.trim();
+          textBefore = editorRef.value.innerText;
+        } else {
+          const range = sel.getRangeAt(0).cloneRange();
+          range.setStart(editorRef.value, 0);
+          textBefore = range.toString();
+
+          const afterRange = sel.getRangeAt(0).cloneRange();
+          afterRange.setEnd(editorRef.value, editorRef.value.childNodes.length);
+          contextAfter = afterRange.toString().trim().slice(0, 300);
         }
 
-        const range = sel.getRangeAt(0).cloneRange();
-        range.setStart(editorRef.value, 0);
-        const textBefore = range.toString();
-
         const sentences = textBefore.split(/[。？！?!…\n]/).filter(s => s.trim().length > 0);
-        return sentences.length > 0 ? sentences[sentences.length - 1].trim() : textBefore.trim();
+        const sentence = sentences.length > 0 ? sentences[sentences.length - 1].trim() : textBefore.trim();
+        const anchorIdx = sentence ? textBefore.lastIndexOf(sentence) : -1;
+        const contextBefore = (anchorIdx > 0 ? textBefore.slice(0, anchorIdx) : '').trim().slice(-1000);
+
+        return { sentence, contextBefore, contextAfter, title };
       };
 
-      const getOfflineBranches = (sentence) => {
-        return [
-          {
-            id: 'c1_' + Date.now(),
-            type: '反转',
-            typeName: '预设打破',
-            tensionTitle: '空间异变 · 盐湖倒影',
-            sentence: '但门后根本没有所谓的书房，只有一片倒悬在暴风雨里的无垠盐湖，而他的倒影早已站在对岸。'
-          },
-          {
-            id: 'c2_' + Date.now(),
-            type: '深潜',
-            typeName: '感官印记',
-            tensionTitle: '创伤记忆 · 绝笔遗墨',
-            sentence: '这种墨水只在十二年前的那场大火前生产过，那是他母亲在绝笔信上留下的同一股气味。'
-          },
-          {
-            id: 'c3_' + Date.now(),
-            type: '危机',
-            typeName: '外部突入',
-            tensionTitle: '致命逼近 · 铁索倒数',
-            sentence: '门轴还未停止呻吟，身后走廊拐角就传来了沉重的金属拖拽声，以及一个正在低低倒数他名字的嘶哑嗓音。'
-          },
-          {
-            id: 'c4_' + Date.now(),
-            type: '超验',
-            typeName: '荒诞诗性',
-            tensionTitle: '物性苏醒 · 逆流墨纹',
-            sentence: '桌上的墨水并不是写在纸上的——它正像活物一样，顺着踢脚线的缝隙逆流进他的鞋底，渗进血管。'
+      // 叙述引号外出现最多的人称，用来填离线引子里的 {ta}
+      const detectPronoun = (text) => {
+        const narration = text.replace(/“[^”]*”|「[^」]*」|"[^"]*"/g, '');
+        let best = '他';
+        let bestCount = 0;
+        ['他', '她', '我', '你'].forEach(p => {
+          const count = narration.split(p).length - 1;
+          if (count > bestCount) {
+            best = p;
+            bestCount = count;
           }
-        ];
+        });
+        return best;
       };
 
-      const fetchAIBranches = async (prompt) => {
+      const getOfflineBranches = ({ sentence, contextBefore, dimensions }) => {
+        const ta = detectPronoun(contextBefore + sentence);
+        return dimensions.map((d, idx) => {
+          const starter = pickRandom(d.starters);
+          return {
+            id: 'offline_' + Date.now() + '_' + idx,
+            type: d.type,
+            typeName: d.typeName,
+            tensionTitle: starter.title,
+            sentence: starter.text.replaceAll('{ta}', ta),
+            offline: true
+          };
+        });
+      };
+
+      const fetchAIBranches = async ({ sentence, contextBefore, contextAfter, title, dimensions }) => {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prompt,
+            sentence,
+            contextBefore,
+            contextAfter,
+            title,
+            dimensions: dimensions.map(({ type, typeName, brief }) => ({ type, typeName, brief })),
             apiKey: apiKey.value.trim(),
             apiBaseUrl: apiBaseUrl.value.trim(),
             model: apiModel.value.trim() || 'deepseek-chat'
@@ -1524,8 +1666,8 @@
 
       // MODE A: 简单光标模式执行 (SIMPLE CARET POPUP)
       const startCaretPopup = async () => {
-        const sentence = getSentenceAtCursor();
-        if (!sentence) {
+        const draw = { ...getDrawContext(), dimensions: pickDimensions() };
+        if (!draw.sentence) {
           showToast('请先写下一句话作为故事起点');
           return;
         }
@@ -1541,15 +1683,15 @@
 
         try {
           if (apiKey.value.trim()) {
-            cards.value = await fetchAIBranches(sentence);
+            cards.value = await fetchAIBranches(draw);
           } else {
-            cards.value = getOfflineBranches(sentence);
+            cards.value = getOfflineBranches(draw);
           }
           showCaretMenu.value = true;
         } catch (e) {
           console.error("Caret draw error:", e);
-          showToast(e.message || 'API 调用受阻，已展示启发牌', true);
-          cards.value = getOfflineBranches(sentence);
+          showToast(e.message || 'API 调用受阻，已展示离线引子', true);
+          cards.value = getOfflineBranches(draw);
           showCaretMenu.value = true;
         } finally {
           isDrawing.value = false;
@@ -1562,8 +1704,8 @@
 
       // MODE B: 塔罗动画模式执行 (3D SPIN & SPLIT TAROT)
       const startTarotAnimation = async () => {
-        const sentence = getSentenceAtCursor();
-        if (!sentence) {
+        const draw = { ...getDrawContext(), dimensions: pickDimensions() };
+        if (!draw.sentence) {
           showToast('请先写下一句话作为故事起点');
           return;
         }
@@ -1577,14 +1719,14 @@
 
         try {
           if (apiKey.value.trim()) {
-            fetchedCards = await fetchAIBranches(sentence);
+            fetchedCards = await fetchAIBranches(draw);
           } else {
-            fetchedCards = getOfflineBranches(sentence);
+            fetchedCards = getOfflineBranches(draw);
           }
         } catch (e) {
           console.error("Tarot fetch error:", e);
-          showToast(e.message || 'API 调用受阻，已展示启发牌', true);
-          fetchedCards = getOfflineBranches(sentence);
+          showToast(e.message || 'API 调用受阻，已展示离线引子', true);
+          fetchedCards = getOfflineBranches(draw);
         }
 
         const elapsed = Date.now() - startTime;
@@ -1690,7 +1832,13 @@
         testingApi.value = true;
         saveSettings();
         try {
-          const testRes = await fetchAIBranches('测试句子：夜幕降临了。');
+          const testRes = await fetchAIBranches({
+            sentence: '夜幕降临了',
+            contextBefore: '',
+            contextAfter: '',
+            title: '',
+            dimensions: pickDimensions()
+          });
           showToast('🎉 连接成功！API 正常响应。');
           showSettings.value = false;
           cards.value = testRes;
