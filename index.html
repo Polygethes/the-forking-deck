@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Draft · 可能性抽卡</title>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Google Fonts: Courier Prime, Cinzel, Noto Serif SC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f5f5f3;
+      color: #1a1a1a;
+      font-family: 'Courier Prime', 'Noto Serif SC', Courier, monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px 100px 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* TOP HEADER */
+    .top-bar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #333;
+    }
+
+    /* Segmented Mode Switcher: 极简光标模式 vs 塔罗动画模式 */
+    .mode-switcher {
+      display: inline-flex;
+      background: #e7e7e3;
+      border: 1px solid #d4d4cd;
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .mode-tab {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-family: inherit;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 4px;
+      color: #666;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .mode-tab.active {
+      background: #ffffff;
+      color: #111;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .settings-btn {
+      background: none;
+      border: 1px solid #dcdcd6;
+      padding: 3px 8px;
+      border-radius: 3px;
+      color: #555;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    .settings-btn:hover {
+      border-color: #999;
+      color: #000;
+      background: #fff;
+    }
+    .settings-btn.connected {
+      color: #166534;
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+
+    /* ========================================================
+       FINAL DRAFT WRITING CANVAS
+       ======================================================== */
+    .page-container {
+      width: 100%;
+      max-width: 860px;
+      min-height: 820px;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e2e2dc;
+      padding: 70px 80px;
+      position: relative;
+      cursor: text;
+    }
+
+    .editor {
+      width: 100%;
+      min-height: 680px;
+      outline: none;
+      font-size: 16px;
+      line-height: 1.85;
+      color: #111111;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .editor:empty::before {
+      content: attr(data-placeholder);
+      color: #aaa;
+      pointer-events: none;
+      display: block;
+    }
+
+    /* FLOATING CARET TRIGGER (跟随光标移动的小按钮) */
+    .caret-pill {
+      position: fixed;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      background: #ffffff;
+      border: 1px solid #222222;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      font-size: 11px;
+      color: #111;
+      cursor: pointer;
+      user-select: none;
+      transform: translate(6px, -4px);
+      transition: background 0.15s, border-color 0.15s;
+      font-family: 'Courier Prime', monospace;
+      font-weight: 600;
+    }
+    .caret-pill:hover {
+      background: #111;
+      color: #fff;
+    }
+    .caret-pill.loading {
+      background: #f0f0ee;
+      color: #777;
+      border-color: #999;
+      cursor: wait;
+    }
+
+    /* ========================================================
+       MODE A: 简单光标模式的就地弹出菜单 (INLINE CARET POPUP)
+       ======================================================== */
+    .caret-menu {
+      position: fixed;
+      z-index: 200;
+      width: 480px;
+      max-width: 92vw;
+      background: #ffffff;
+      border: 1px solid #1a1a1a;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+      padding: 12px;
+      transform: translateY(6px);
+      font-family: 'Courier Prime', 'Noto Serif SC', monospace;
+      animation: popIn 0.15s ease-out;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(2px) scale(0.98); }
+      to { opacity: 1; transform: translateY(6px) scale(1); }
+    }
+
+    .caret-menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px 8px 6px;
+      border-bottom: 1px dashed #d8d8d0;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .caret-menu-close {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 2px 4px;
+    }
+    .caret-menu-close:hover { color: #000; }
+
+    .caret-card-item {
+      padding: 10px 12px;
+      border: 1px solid #eaeae5;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      margin-bottom: 6px;
+      background: #fafaf8;
+    }
+
+    .caret-card-item:hover {
+      background: #ffffff;
+      border-color: #222;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .caret-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .caret-card-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: #111;
+      border: 1px solid #333;
+      padding: 1px 4px;
+      border-radius: 2px;
+      background: #fff;
+      line-height: 1.2;
+    }
+
+    .caret-card-tension {
+      font-size: 10px;
+      color: #777;
+    }
+
+    .caret-card-text {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #222;
+    }
+    .caret-card-item:hover .caret-card-text {
+      color: #000;
+      font-weight: 600;
+    }
+
+    /* ========================================================
+       MODE B: 塔罗牌3D旋转与四向分裂动画 (TAROT 3D ANIMATION)
+       ======================================================== */
+    .tarot-stage {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: rgba(10, 11, 14, 0.86);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      perspective: 1400px;
+      animation: fadeInStage 0.25s ease-out forwards;
+    }
+
+    @keyframes fadeInStage {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .tarot-subtitle {
+      font-family: 'Cinzel', 'Noto Serif SC', serif;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: #d4af37;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      opacity: 0.95;
+    }
+
+    .spinning-arena {
+      position: relative;
+      width: 140px;
+      height: 220px;
+      transform-style: preserve-3d;
+    }
+
+    .tarot-solo-card {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      transform-style: preserve-3d;
+      animation: mysticSpin 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes mysticSpin {
+      0% { transform: rotateY(0deg) scale(0.95); }
+      50% { transform: rotateY(360deg) scale(1.08); }
+      100% { transform: rotateY(720deg) scale(0.95); }
+    }
+
+    .tarot-back {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: #0f1115;
+      border: 2px solid #d4af37;
+      box-shadow: 0 0 24px rgba(212, 175, 55, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      overflow: hidden;
+    }
+
+    .tarot-back::before {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .tarot-sigil {
+      width: 52px;
+      height: 52px;
+      color: #d4af37;
+      opacity: 0.9;
+      animation: pulseGlow 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.6; transform: scale(0.96); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      max-width: 1120px;
+      width: 100%;
+      transform-style: preserve-3d;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .split-grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 580px;
+      }
+    }
+
+    .tarot-split-card {
+      position: relative;
+      height: 310px;
+      transform-style: preserve-3d;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s;
+    }
+
+    @keyframes splitOut_0 {
+      0% { opacity: 0; transform: translate3d(180px, 0, -100px) scale(0.6) rotateY(180deg); }
+      100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotateY(0deg); }
+    }
+    @keyframes splitOut_1 {
+      0% { opacity: 0; transform: translate3d(60px, 0, -100px) scale(0.6) rotateY(180deg); }
+      100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotateY(0deg); }
+    }
+    @keyframes splitOut_2 {
+      0% { opacity: 0; transform: translate3d(-60px, 0, -100px) scale(0.6) rotateY(180deg); }
+      100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotateY(0deg); }
+    }
+    @keyframes splitOut_3 {
+      0% { opacity: 0; transform: translate3d(-180px, 0, -100px) scale(0.6) rotateY(180deg); }
+      100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotateY(0deg); }
+    }
+
+    .tarot-split-card.idx-0 { animation: splitOut_0 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .tarot-split-card.idx-1 { animation: splitOut_1 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .tarot-split-card.idx-2 { animation: splitOut_2 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .tarot-split-card.idx-3 { animation: splitOut_3 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    .tarot-split-card:hover { transform: translateY(-10px) scale(1.02); }
+
+    .tarot-front {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      background: #14161d;
+      border: 1px solid #d4af37;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(212, 175, 55, 0.2);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #e5e5e5;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tarot-front::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 5px;
+      pointer-events: none;
+    }
+
+    .tarot-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .tarot-numeral {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #d4af37;
+    }
+
+    .tarot-type-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: rgba(212, 175, 55, 0.15);
+      color: #f3e5ab;
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      font-family: 'Courier Prime', monospace;
+    }
+
+    .tarot-sentence {
+      font-family: 'Noto Serif SC', 'Courier Prime', serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #ffffff;
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding-right: 2px;
+    }
+
+    .tarot-tension {
+      font-size: 11px;
+      color: #9ca3af;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tarot-select-hint {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #d4af37;
+      text-align: center;
+      opacity: 0.8;
+      font-family: 'Courier Prime', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .tarot-split-card:hover .tarot-select-hint {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    .tarot-footer-actions {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tarot-btn-esc {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #bbb;
+      padding: 6px 16px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .tarot-btn-esc:hover {
+      border-color: #fff;
+      color: #fff;
+    }
+
+    /* Toast notice */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      background: #111;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+    }
+    .toast.error { background: #b91c1c; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Settings Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-box {
+      background: #fff;
+      border: 1px solid #222;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+      width: 440px;
+      max-width: 92vw;
+      padding: 24px;
+      font-size: 12px;
+    }
+
+    .modal-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; color: #333; margin-bottom: 4px; font-weight: 600; }
+    .form-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+      border-radius: 2px;
+    }
+    .form-input:focus { border-color: #000; }
+
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      font-family: inherit;
+      font-size: 11px;
+      border: 1px solid #333;
+      cursor: pointer;
+      background: #fff;
+      border-radius: 2px;
+    }
+    .btn:hover { background: #f0f0f0; }
+    .btn.primary { background: #111; color: #fff; }
+    .btn.primary:hover { background: #333; }
+
+    .tip-bar {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+
+  <!-- TOP HEADER -->
+  <div class="top-bar">
+    <div class="brand-title">
+      <span>FINAL DRAFT · DIVERGENCE ENGINE</span>
+    </div>
+
+    <!-- Mode Switcher: 极简光标模式 VS 塔罗动画模式 -->
+    <div class="mode-switcher">
+      <button 
+        class="mode-tab" 
+        :class="{ active: drawMode === 'caret' }" 
+        @click="setDrawMode('caret')"
+        title="按 Tab 直接在光标下方弹出精简菜单"
+      >
+        ⚡️ 简单光标模式
+      </button>
+      <button 
+        class="mode-tab" 
+        :class="{ active: drawMode === 'tarot' }" 
+        @click="setDrawMode('tarot')"
+        title="按 Tab 呈现 3D 旋转分裂塔罗仪式动效"
+      >
+        🎴 塔罗动画模式
+      </button>
+    </div>
+
+    <!-- API Config Button -->
+    <div>
+      <button 
+        class="settings-btn" 
+        :class="{ connected: apiKey }"
+        @click="showSettings = true"
+      >
+        {{ apiKey ? '● API 已就绪' : '○ 未配 API' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- THE DOCUMENT CANVAS (FINAL DRAFT) -->
+  <div class="page-container" @click="focusEditor">
+    <div 
+      ref="editorRef"
+      class="editor" 
+      contenteditable="true" 
+      spellcheck="false"
+      data-placeholder="在此开始你的剧本或小说创作……写下一句后，按 Tab 或点击光标旁的小牌开启分岔。"
+      @input="onInput"
+      @keyup="updateCaretPosition"
+      @mouseup="updateCaretPosition"
+      @keydown="onKeydown"
+      @blur="onBlur"
+    ></div>
+  </div>
+
+  <div class="tip-bar">
+    当前为：<b style="color:#222;">{{ drawMode === 'caret' ? '【简单光标模式】' : '【塔罗动画模式】' }}</b>。打完一句后，直接按 <kbd style="background:#e4e4e0; padding:1px 5px; border-radius:2px; font-weight:bold;">Tab</kbd> 抽卡；选牌后自动接续文末，绝不覆盖已有正文。
+  </div>
+
+  <!-- FLOATING CARET TRIGGER (跟随光标移动的抽卡微小按钮) -->
+  <div 
+    v-if="caretVisible && ceremonyState === 'idle' && !showCaretMenu"
+    class="caret-pill"
+    :class="{ loading: isDrawing }"
+    :style="{ top: caretPos.top + 'px', left: caretPos.left + 'px' }"
+    @mousedown.prevent="triggerDraw"
+    title="点击抽卡 (或按 Tab)"
+  >
+    <span>🎴</span>
+    <span>{{ isDrawing ? '计算中...' : '抽卡 (Tab)' }}</span>
+  </div>
+
+  <!-- ========================================================
+       MODE A: 简单光标模式 - 就地弹出精简菜单 (INLINE CARET POPUP)
+       ======================================================== -->
+  <div 
+    v-if="drawMode === 'caret' && showCaretMenu"
+    class="caret-menu"
+    :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
+    @mousedown.stop
+  >
+    <div class="caret-menu-header">
+      <span>可能的发展方向 ({{ cards.length }})</span>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span style="font-size:10px; cursor:pointer; text-decoration:underline;" @click="triggerDraw">
+          {{ isDrawing ? '抽卡中...' : '[ 重新抽一批 ]' }}
+        </span>
+        <button class="caret-menu-close" @click="closeCaretMenu">✕</button>
+      </div>
+    </div>
+
+    <div 
+      v-for="(c, idx) in cards" 
+      :key="c.id"
+      class="caret-card-item"
+      @click="selectCard(c)"
+    >
+      <div class="caret-card-meta">
+        <span class="caret-card-tag">{{ c.type }}</span>
+        <span class="caret-card-tension">{{ c.typeName }} · {{ c.tensionTitle }}</span>
+      </div>
+      <div class="caret-card-text">{{ c.sentence }}</div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODE B: 塔罗动画模式 - 3D旋转与分裂全屏仪式 (TAROT CEREMONY)
+       ======================================================== -->
+  <div 
+    v-if="drawMode === 'tarot' && ceremonyState !== 'idle'" 
+    class="tarot-stage"
+    @click.self="dismissCeremony"
+  >
+    <div class="tarot-subtitle">
+      {{ ceremonyState === 'spinning' ? '— THE WHEEL OF POSSIBILITIES IS TURNING —' : '— 4 DIVERGENT DESTINIES REVEALED —' }}
+    </div>
+
+    <!-- Phase 1: 3D Spinning Tarot Card -->
+    <div v-if="ceremonyState === 'spinning'" class="spinning-arena">
+      <div class="tarot-solo-card">
+        <div class="tarot-back">
+          <svg class="tarot-sigil" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="50" cy="50" r="40" stroke-dasharray="3 3"/>
+            <polygon points="50,15 80,75 20,75" stroke="#d4af37"/>
+            <polygon points="50,85 80,25 20,25" stroke="#d4af37"/>
+            <circle cx="50" cy="50" r="10" fill="#d4af37" fill-opacity="0.3"/>
+            <circle cx="50" cy="50" r="3" fill="#d4af37"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2: Split Into Four Cards -->
+    <div v-if="ceremonyState === 'revealed'" class="split-grid">
+      <div 
+        v-for="(c, idx) in cards" 
+        :key="c.id"
+        class="tarot-split-card"
+        :class="'idx-' + idx"
+        @click="selectCard(c)"
+      >
+        <div class="tarot-front">
+          <div>
+            <div class="tarot-card-header">
+              <span class="tarot-numeral">{{ ['I', 'II', 'III', 'IV'][idx] || 'V' }}</span>
+              <span class="tarot-type-badge">{{ c.type }} · {{ c.typeName }}</span>
+            </div>
+            <div class="tarot-sentence">{{ c.sentence }}</div>
+          </div>
+          <div>
+            <div class="tarot-tension">
+              <span>✦</span>
+              <span>{{ c.tensionTitle }}</span>
+            </div>
+            <div class="tarot-select-hint">点击采纳并接续 ↵</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarot-footer-actions">
+      <button v-if="ceremonyState === 'revealed'" class="tarot-btn-esc" @click="startTarotAnimation">
+        ↻ 重新旋转洗牌
+      </button>
+      <button class="tarot-btn-esc" @click="dismissCeremony">
+        ✕ 放弃抽卡 (Esc)
+      </button>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>AI 裂变引擎配置</span>
+        <span style="cursor:pointer;" @click="closeSettings">✕</span>
+      </div>
+
+      <div class="form-group">
+        <label>API Key (DeepSeek / OpenAI 兼容)</label>
+        <input v-model="apiKey" type="password" placeholder="sk-..." class="form-input">
+        <span style="color:#888; font-size:10px; display:block; margin-top:3px;">保存在本地浏览器 LocalStorage。</span>
+      </div>
+
+      <div class="form-group">
+        <label>Base URL</label>
+        <input v-model="apiBaseUrl" type="text" placeholder="https://api.deepseek.com/v1" class="form-input">
+        <span style="color:#888; font-size:10px; display:block; margin-top:3px;">例如 https://api.deepseek.com 或 https://api.deepseek.com/v1</span>
+      </div>
+
+      <div class="form-group">
+        <label>Model</label>
+        <input v-model="apiModel" type="text" placeholder="deepseek-chat" class="form-input">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" @click="clearKey">清除 Key</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" :disabled="testingApi" @click="testAndDraw">
+            {{ testingApi ? '测试中...' : '测试并抽卡' }}
+          </button>
+          <button class="btn primary" @click="saveAndClose">保存设置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div v-if="toastMsg" class="toast" :class="{ error: toastIsError }">
+    {{ toastMsg }}
+  </div>
+
+</div>
+
+<script>
+  const { createApp, ref, onMounted, nextTick } = Vue;
+
+  createApp({
+    setup() {
+      const editorRef = ref(null);
+      const caretVisible = ref(false);
+      const caretPos = ref({ top: 0, left: 0 });
+      const menuPos = ref({ top: 0, left: 0 });
+      let savedRange = null; // Exact caret position before modal/overlay opens
+
+      // TWO MODES: 'caret' (简单光标就地弹出) vs 'tarot' (塔罗3D旋转分裂动画)
+      const drawMode = ref(localStorage.getItem('fd_draw_mode') || 'tarot');
+
+      // State for Simple Caret Mode
+      const showCaretMenu = ref(false);
+      const isDrawing = ref(false);
+
+      // State for Tarot Animation Mode
+      const ceremonyState = ref('idle'); // 'idle' | 'spinning' | 'revealed'
+
+      const cards = ref([]);
+      const showSettings = ref(false);
+      const testingApi = ref(false);
+      const toastMsg = ref('');
+      const toastIsError = ref(false);
+
+      // Audio FX
+      let audioCtx = null;
+      const initAudio = () => {
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      };
+
+      const playSpinSound = () => {
+        try {
+          initAudio();
+          if (!audioCtx) return;
+          const now = audioCtx.currentTime;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(432, now);
+          osc.frequency.exponentialRampToValueAtTime(864, now + 0.8);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 1.2);
+        } catch (e) {}
+      };
+
+      const playSplitSound = () => {
+        try {
+          initAudio();
+          if (!audioCtx) return;
+          const now = audioCtx.currentTime;
+          for (let i = 0; i < 4; i++) {
+            const t = now + (i * 0.07);
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(700 + (i * 120), t);
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + 0.08);
+          }
+        } catch (e) {}
+      };
+
+      // Settings
+      const apiKey = ref(localStorage.getItem('fd_card_api_key') || '');
+      const apiBaseUrl = ref(localStorage.getItem('fd_card_api_base') || 'https://api.deepseek.com/v1');
+      const apiModel = ref(localStorage.getItem('fd_card_api_model') || 'deepseek-chat');
+
+      const showToast = (msg, isErr = false) => {
+        toastMsg.value = msg;
+        toastIsError.value = isErr;
+        setTimeout(() => { toastMsg.value = ''; }, 3000);
+      };
+
+      const setDrawMode = (mode) => {
+        drawMode.value = mode;
+        localStorage.setItem('fd_draw_mode', mode);
+        closeCaretMenu();
+        dismissCeremony();
+        showToast(mode === 'caret' ? '已切换至：⚡️ 简单光标模式' : '已切换至：🎴 塔罗动画模式');
+        nextTick(focusEditor);
+      };
+
+      // Caret positioning
+      const updateCaretPosition = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) {
+          caretVisible.value = false;
+          return;
+        }
+
+        const range = sel.getRangeAt(0);
+        if (!editorRef.value || !editorRef.value.contains(range.startContainer)) {
+          caretVisible.value = false;
+          return;
+        }
+
+        const textContent = editorRef.value.innerText.trim();
+        if (!textContent) {
+          caretVisible.value = false;
+          return;
+        }
+
+        const rects = range.getClientRects();
+        let targetRect = null;
+        if (rects.length > 0) {
+          targetRect = rects[rects.length - 1];
+        } else {
+          targetRect = range.getBoundingClientRect();
+          if (targetRect.width === 0 && targetRect.height === 0) {
+            const node = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+            if (node) targetRect = node.getBoundingClientRect();
+          }
+        }
+
+        if (targetRect && targetRect.top > 0) {
+          caretPos.value = {
+            top: targetRect.bottom + 4,
+            left: Math.min(targetRect.right + 6, window.innerWidth - 130)
+          };
+          caretVisible.value = true;
+        }
+      };
+
+      const onInput = () => {
+        closeCaretMenu();
+        updateCaretPosition();
+      };
+
+      const onBlur = () => {
+        // retain
+      };
+
+      const focusEditor = () => {
+        if (!editorRef.value) return;
+        editorRef.value.focus();
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || !editorRef.value.contains(sel.anchorNode)) {
+          const range = document.createRange();
+          range.selectNodeContents(editorRef.value);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        updateCaretPosition();
+      };
+
+      // Extract sentence before cursor
+      const getSentenceAtCursor = () => {
+        if (!editorRef.value) return '';
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || !editorRef.value.contains(sel.anchorNode)) {
+          return editorRef.value.innerText.trim();
+        }
+
+        const range = sel.getRangeAt(0).cloneRange();
+        range.setStart(editorRef.value, 0);
+        const textBefore = range.toString();
+
+        const sentences = textBefore.split(/[。？！?!…\n]/).filter(s => s.trim().length > 0);
+        return sentences.length > 0 ? sentences[sentences.length - 1].trim() : textBefore.trim();
+      };
+
+      const getOfflineBranches = (sentence) => {
+        return [
+          {
+            id: 'c1_' + Date.now(),
+            type: '反转',
+            typeName: '预设打破',
+            tensionTitle: '空间异变 · 盐湖倒影',
+            sentence: '但门后根本没有所谓的书房，只有一片倒悬在暴风雨里的无垠盐湖，而他的倒影早已站在对岸。'
+          },
+          {
+            id: 'c2_' + Date.now(),
+            type: '深潜',
+            typeName: '感官印记',
+            tensionTitle: '创伤记忆 · 绝笔遗墨',
+            sentence: '这种墨水只在十二年前的那场大火前生产过，那是他母亲在绝笔信上留下的同一股气味。'
+          },
+          {
+            id: 'c3_' + Date.now(),
+            type: '危机',
+            typeName: '外部突入',
+            tensionTitle: '致命逼近 · 铁索倒数',
+            sentence: '门轴还未停止呻吟，身后走廊拐角就传来了沉重的金属拖拽声，以及一个正在低低倒数他名字的嘶哑嗓音。'
+          },
+          {
+            id: 'c4_' + Date.now(),
+            type: '超验',
+            typeName: '荒诞诗性',
+            tensionTitle: '物性苏醒 · 逆流墨纹',
+            sentence: '桌上的墨水并不是写在纸上的——它正像活物一样，顺着踢脚线的缝隙逆流进他的鞋底，渗进血管。'
+          }
+        ];
+      };
+
+      const fetchAIBranches = async (prompt) => {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            apiKey: apiKey.value.trim(),
+            apiBaseUrl: apiBaseUrl.value.trim(),
+            model: apiModel.value.trim() || 'deepseek-chat'
+          })
+        });
+
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          throw new Error(`服务响应非合法 JSON (${res.status})`);
+        }
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `API 请求错误 (${res.status})`);
+        }
+
+        return data.branches || [];
+      };
+
+      // Lock caret range before popup / overlay opens
+      const lockCaretRange = () => {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && editorRef.value.contains(sel.anchorNode)) {
+          savedRange = sel.getRangeAt(0).cloneRange();
+          savedRange.collapse(false); // ALWAYS collapse to the end so nothing is overwritten!
+        } else {
+          savedRange = document.createRange();
+          savedRange.selectNodeContents(editorRef.value);
+          savedRange.collapse(false);
+        }
+      };
+
+      // TRIGGER DRAW: DISPATCHES TO EITHER CARET MODE OR TAROT MODE
+      const triggerDraw = () => {
+        if (drawMode.value === 'caret') {
+          startCaretPopup();
+        } else {
+          startTarotAnimation();
+        }
+      };
+
+      // MODE A: 简单光标模式执行 (SIMPLE CARET POPUP)
+      const startCaretPopup = async () => {
+        const sentence = getSentenceAtCursor();
+        if (!sentence) {
+          showToast('请先写下一句话作为故事起点');
+          return;
+        }
+
+        lockCaretRange();
+        isDrawing.value = true;
+        closeCaretMenu();
+
+        menuPos.value = {
+          top: Math.min(caretPos.value.top || 180, window.innerHeight - 380),
+          left: Math.max(20, Math.min(caretPos.value.left || 100, window.innerWidth - 500))
+        };
+
+        try {
+          if (apiKey.value.trim()) {
+            cards.value = await fetchAIBranches(sentence);
+          } else {
+            cards.value = getOfflineBranches(sentence);
+          }
+          showCaretMenu.value = true;
+        } catch (e) {
+          console.error("Caret draw error:", e);
+          showToast(e.message || 'API 调用受阻，已展示启发牌', true);
+          cards.value = getOfflineBranches(sentence);
+          showCaretMenu.value = true;
+        } finally {
+          isDrawing.value = false;
+        }
+      };
+
+      const closeCaretMenu = () => {
+        showCaretMenu.value = false;
+      };
+
+      // MODE B: 塔罗动画模式执行 (3D SPIN & SPLIT TAROT)
+      const startTarotAnimation = async () => {
+        const sentence = getSentenceAtCursor();
+        if (!sentence) {
+          showToast('请先写下一句话作为故事起点');
+          return;
+        }
+
+        lockCaretRange();
+        ceremonyState.value = 'spinning';
+        playSpinSound();
+
+        const startTime = Date.now();
+        let fetchedCards = [];
+
+        try {
+          if (apiKey.value.trim()) {
+            fetchedCards = await fetchAIBranches(sentence);
+          } else {
+            fetchedCards = getOfflineBranches(sentence);
+          }
+        } catch (e) {
+          console.error("Tarot fetch error:", e);
+          showToast(e.message || 'API 调用受阻，已展示启发牌', true);
+          fetchedCards = getOfflineBranches(sentence);
+        }
+
+        const elapsed = Date.now() - startTime;
+        const minSpinDuration = 900;
+        if (elapsed < minSpinDuration) {
+          await new Promise(r => setTimeout(r, minSpinDuration - elapsed));
+        }
+
+        cards.value = fetchedCards;
+        playSplitSound();
+        ceremonyState.value = 'revealed';
+      };
+
+      const dismissCeremony = () => {
+        ceremonyState.value = 'idle';
+        nextTick(focusEditor);
+      };
+
+      // SELECT CARD & NON-DESTRUCTIVELY APPEND (绝不覆盖已有文本)
+      const selectCard = (card) => {
+        closeCaretMenu();
+        dismissCeremony();
+
+        if (!editorRef.value) return;
+        editorRef.value.focus();
+        const sel = window.getSelection();
+
+        let targetRange = savedRange;
+        if (!targetRange || !editorRef.value.contains(targetRange.startContainer)) {
+          targetRange = document.createRange();
+          targetRange.selectNodeContents(editorRef.value);
+          targetRange.collapse(false);
+        } else {
+          targetRange.collapse(false); // CRITICAL: NEVER OVERWRITE
+        }
+
+        const fullText = editorRef.value.innerText;
+        const needsGlue = fullText.length > 0 && !/[，。！？?!…\s\n]$/.test(fullText.trim());
+        const insertText = (needsGlue ? ' ' : '') + card.sentence;
+
+        const textNode = document.createTextNode(insertText);
+        targetRange.insertNode(textNode);
+
+        const newRange = document.createRange();
+        newRange.setStartAfter(textNode);
+        newRange.collapse(true);
+
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        savedRange = newRange.cloneRange();
+
+        updateCaretPosition();
+        showToast('✨ 已采纳分支并续写入文');
+      };
+
+      const onKeydown = (e) => {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          triggerDraw();
+        } else if (e.key === 'Escape') {
+          closeCaretMenu();
+          dismissCeremony();
+        }
+      };
+
+      const saveSettings = () => {
+        localStorage.setItem('fd_card_api_key', apiKey.value.trim());
+        localStorage.setItem('fd_card_api_base', apiBaseUrl.value.trim());
+        localStorage.setItem('fd_card_api_model', apiModel.value.trim());
+      };
+
+      const saveAndClose = () => {
+        saveSettings();
+        showSettings.value = false;
+        showToast('API 设置已保存！');
+        nextTick(focusEditor);
+      };
+
+      const closeSettings = () => {
+        showSettings.value = false;
+        nextTick(focusEditor);
+      };
+
+      const clearKey = () => {
+        apiKey.value = '';
+        localStorage.removeItem('fd_card_api_key');
+        showToast('已清除 Key');
+      };
+
+      const testAndDraw = async () => {
+        if (!apiKey.value.trim()) {
+          showToast('请先输入 API Key', true);
+          return;
+        }
+        testingApi.value = true;
+        saveSettings();
+        try {
+          const testRes = await fetchAIBranches('测试句子：夜幕降临了。');
+          showToast('🎉 连接成功！API 正常响应。');
+          showSettings.value = false;
+          cards.value = testRes;
+
+          if (drawMode.value === 'caret') {
+            menuPos.value = {
+              top: Math.min(caretPos.value.top || 180, window.innerHeight - 380),
+              left: Math.max(20, Math.min(caretPos.value.left || 100, window.innerWidth - 500))
+            };
+            showCaretMenu.value = true;
+          } else {
+            playSplitSound();
+            ceremonyState.value = 'revealed';
+          }
+        } catch (e) {
+          showToast('连接失败: ' + (e.message || '未知错误'), true);
+        } finally {
+          testingApi.value = false;
+        }
+      };
+
+      window.addEventListener('click', (e) => {
+        if (!e.target.closest('.caret-menu') && !e.target.closest('.caret-pill') && !e.target.closest('.modal-box')) {
+          closeCaretMenu();
+        }
+      });
+
+      window.addEventListener('resize', updateCaretPosition);
+      window.addEventListener('scroll', updateCaretPosition);
+
+      onMounted(() => {
+        if (editorRef.value) {
+          editorRef.value.innerText = '他推开那扇尘封已久的木门，闻到了一股潮湿的墨水味。';
+          focusEditor();
+        }
+      });
+
+      return {
+        editorRef,
+        caretVisible,
+        caretPos,
+        menuPos,
+        drawMode,
+        showCaretMenu,
+        ceremonyState,
+        isDrawing,
+        cards,
+        showSettings,
+        testingApi,
+        toastMsg,
+        toastIsError,
+        apiKey,
+        apiBaseUrl,
+        apiModel,
+        setDrawMode,
+        onInput,
+        onKeydown,
+        onBlur,
+        updateCaretPosition,
+        focusEditor,
+        triggerDraw,
+        startCaretPopup,
+        closeCaretMenu,
+        startTarotAnimation,
+        dismissCeremony,
+        selectCard,
+        saveSettings,
+        saveAndClose,
+        closeSettings,
+        clearKey,
+        testAndDraw
+      };
+    }
+  }).mount('#app');
+</script>
+
+</body>
+</html>
