@@ -24,10 +24,184 @@
       font-family: 'Courier Prime', 'Noto Serif SC', Courier, monospace;
       min-height: 100vh;
       display: flex;
+      flex-direction: row;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========================================================
+       LEFT SIDEBAR (文稿库与文档选择栏)
+       ======================================================== */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      height: 100vh;
+      background: #ecece8;
+      border-right: 1px solid #dcdcd4;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .sidebar.collapsed {
+      margin-left: -280px;
+    }
+
+    .sidebar-header {
+      padding: 20px 18px 14px 18px;
+      border-bottom: 1px solid #dcdcd4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-new-doc {
+      background: #111;
+      color: #fff;
+      border: 1px solid #111;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      font-weight: 600;
+    }
+    .btn-new-doc:hover {
+      background: #333;
+    }
+
+    /* Document List */
+    .doc-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .doc-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .doc-item:hover {
+      background: rgba(255, 255, 255, 0.6);
+      border-color: #dcdcd4;
+    }
+
+    .doc-item.active {
+      background: #ffffff;
+      border-color: #cbcbc2;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+    .doc-item.active::before {
+      content: '';
+      position: absolute;
+      left: -1px;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: #d4af37;
+      border-radius: 2px;
+    }
+
+    .doc-item-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .doc-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .doc-delete-btn {
+      opacity: 0;
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0 4px;
+      transition: opacity 0.15s, color 0.15s;
+    }
+    .doc-item:hover .doc-delete-btn {
+      opacity: 1;
+    }
+    .doc-delete-btn:hover {
+      color: #b91c1c;
+    }
+
+    .doc-item-snippet {
+      font-size: 11px;
+      color: #777;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .doc-item-date {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 2px;
+    }
+
+    .sidebar-footer {
+      padding: 12px 18px;
+      border-top: 1px solid #dcdcd4;
+      font-size: 10px;
+      color: #888;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ========================================================
+       MAIN WRITING DESK (右侧主撰写区)
+       ======================================================== */
+    .main-workspace {
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 30px 20px 100px 20px;
-      -webkit-font-smoothing: antialiased;
+      padding: 24px 24px 100px 24px;
+      position: relative;
     }
 
     /* TOP HEADER */
@@ -42,13 +216,39 @@
       letter-spacing: 0.05em;
     }
 
+    .top-left-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-toggle-btn {
+      background: none;
+      border: 1px solid #dcdcd4;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #555;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sidebar-toggle-btn:hover {
+      background: #fff;
+      color: #000;
+      border-color: #999;
+    }
+
     .brand-title {
       font-weight: 700;
       text-transform: uppercase;
       color: #333;
     }
 
-    /* Segmented Mode Switcher: 极简光标模式 vs 塔罗动画模式 */
+    /* Mode Switcher: 极简光标模式 vs 塔罗动画模式 */
     .mode-switcher {
       display: inline-flex;
       background: #e7e7e3;
@@ -108,14 +308,31 @@
       background: #ffffff;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(0, 0, 0, 0.03);
       border: 1px solid #e2e2dc;
-      padding: 70px 80px;
+      padding: 60px 80px 80px 80px;
       position: relative;
       cursor: text;
     }
 
+    /* Document Title In Canvas */
+    .doc-canvas-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #ecece8;
+      outline: none;
+      font-family: 'Courier Prime', 'Noto Serif SC', serif;
+    }
+    .doc-canvas-title:empty::before {
+      content: '在此键入草稿标题...';
+      color: #bbb;
+      pointer-events: none;
+    }
+
     .editor {
       width: 100%;
-      min-height: 680px;
+      min-height: 640px;
       outline: none;
       font-size: 16px;
       line-height: 1.85;
@@ -516,6 +733,7 @@
     .toast {
       position: fixed;
       bottom: 24px;
+      right: 24px;
       background: #111;
       color: #fff;
       padding: 8px 16px;
@@ -609,219 +827,288 @@
 </head>
 <body>
 
-<div id="app" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-
-  <!-- TOP HEADER -->
-  <div class="top-bar">
-    <div class="brand-title">
-      <span>FINAL DRAFT · DIVERGENCE ENGINE</span>
-    </div>
-
-    <!-- Mode Switcher: 极简光标模式 VS 塔罗动画模式 -->
-    <div class="mode-switcher">
-      <button 
-        class="mode-tab" 
-        :class="{ active: drawMode === 'caret' }" 
-        @click="setDrawMode('caret')"
-        title="按 Tab 直接在光标下方弹出精简菜单"
-      >
-        ⚡️ 简单光标模式
-      </button>
-      <button 
-        class="mode-tab" 
-        :class="{ active: drawMode === 'tarot' }" 
-        @click="setDrawMode('tarot')"
-        title="按 Tab 呈现 3D 旋转分裂塔罗仪式动效"
-      >
-        🎴 塔罗动画模式
-      </button>
-    </div>
-
-    <!-- API Config Button -->
-    <div>
-      <button 
-        class="settings-btn" 
-        :class="{ connected: apiKey }"
-        @click="showSettings = true"
-      >
-        {{ apiKey ? '● API 已就绪' : '○ 未配 API' }}
-      </button>
-    </div>
-  </div>
-
-  <!-- THE DOCUMENT CANVAS (FINAL DRAFT) -->
-  <div class="page-container" @click="focusEditor">
-    <div 
-      ref="editorRef"
-      class="editor" 
-      contenteditable="true" 
-      spellcheck="false"
-      data-placeholder="在此开始你的剧本或小说创作……写下一句后，按 Tab 或点击光标旁的小牌开启分岔。"
-      @input="onInput"
-      @keyup="updateCaretPosition"
-      @mouseup="updateCaretPosition"
-      @keydown="onKeydown"
-      @blur="onBlur"
-    ></div>
-  </div>
-
-  <div class="tip-bar">
-    当前为：<b style="color:#222;">{{ drawMode === 'caret' ? '【简单光标模式】' : '【塔罗动画模式】' }}</b>。打完一句后，直接按 <kbd style="background:#e4e4e0; padding:1px 5px; border-radius:2px; font-weight:bold;">Tab</kbd> 抽卡；选牌后自动接续文末，绝不覆盖已有正文。
-  </div>
-
-  <!-- FLOATING CARET TRIGGER (跟随光标移动的抽卡微小按钮) -->
-  <div 
-    v-if="caretVisible && ceremonyState === 'idle' && !showCaretMenu"
-    class="caret-pill"
-    :class="{ loading: isDrawing }"
-    :style="{ top: caretPos.top + 'px', left: caretPos.left + 'px' }"
-    @mousedown.prevent="triggerDraw"
-    title="点击抽卡 (或按 Tab)"
-  >
-    <span>🎴</span>
-    <span>{{ isDrawing ? '计算中...' : '抽卡 (Tab)' }}</span>
-  </div>
+<div id="app" style="width: 100%; display: flex; flex-direction: row; min-height: 100vh;">
 
   <!-- ========================================================
-       MODE A: 简单光标模式 - 就地弹出精简菜单 (INLINE CARET POPUP)
+       LEFT SIDEBAR (文稿库与文档选择栏)
        ======================================================== -->
-  <div 
-    v-if="drawMode === 'caret' && showCaretMenu"
-    class="caret-menu"
-    :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
-    @mousedown.stop
-  >
-    <div class="caret-menu-header">
-      <span>可能的发展方向 ({{ cards.length }})</span>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <span style="font-size:10px; cursor:pointer; text-decoration:underline;" @click="triggerDraw">
-          {{ isDrawing ? '抽卡中...' : '[ 重新抽一批 ]' }}
-        </span>
-        <button class="caret-menu-close" @click="closeCaretMenu">✕</button>
+  <aside class="sidebar" :class="{ collapsed: isSidebarCollapsed }">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <span>文稿库</span>
+        <span style="font-weight:normal; color:#888;">({{ documents.length }})</span>
+      </div>
+      <button class="btn-new-doc" @click="createNewDoc" title="新建空白文档">
+        <span>+ 新建草稿</span>
+      </button>
+    </div>
+
+    <!-- Document List -->
+    <div class="doc-list">
+      <div 
+        v-for="doc in documents" 
+        :key="doc.id"
+        class="doc-item"
+        :class="{ active: currentDocId === doc.id }"
+        @click="selectDoc(doc.id)"
+      >
+        <div class="doc-item-title-row">
+          <div class="doc-item-title">{{ doc.title || '未命名草稿' }}</div>
+          <button 
+            v-if="documents.length > 1"
+            class="doc-delete-btn" 
+            @click.stop="deleteDoc(doc.id)"
+            title="删除此草稿"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="doc-item-snippet">{{ doc.content ? doc.content.slice(0, 40) : '（空白文档）' }}</div>
+        <div class="doc-item-date">{{ formatDate(doc.updatedAt) }}</div>
       </div>
     </div>
 
-    <div 
-      v-for="(c, idx) in cards" 
-      :key="c.id"
-      class="caret-card-item"
-      @click="selectCard(c)"
-    >
-      <div class="caret-card-meta">
-        <span class="caret-card-tag">{{ c.type }}</span>
-        <span class="caret-card-tension">{{ c.typeName }} · {{ c.tensionTitle }}</span>
-      </div>
-      <div class="caret-card-text">{{ c.sentence }}</div>
+    <div class="sidebar-footer">
+      <span>Auto-saved Locally</span>
+      <span style="cursor:pointer;" @click="toggleSidebar">[ 收起 ◀ ]</span>
     </div>
-  </div>
+  </aside>
 
   <!-- ========================================================
-       MODE B: 塔罗动画模式 - 3D旋转与分裂全屏仪式 (TAROT CEREMONY)
+       MAIN WRITING DESK (主工作区)
        ======================================================== -->
-  <div 
-    v-if="drawMode === 'tarot' && ceremonyState !== 'idle'" 
-    class="tarot-stage"
-    @click.self="dismissCeremony"
-  >
-    <div class="tarot-subtitle">
-      {{ ceremonyState === 'spinning' ? '— THE WHEEL OF POSSIBILITIES IS TURNING —' : '— 4 DIVERGENT DESTINIES REVEALED —' }}
-    </div>
+  <main class="main-workspace">
 
-    <!-- Phase 1: 3D Spinning Tarot Card -->
-    <div v-if="ceremonyState === 'spinning'" class="spinning-arena">
-      <div class="tarot-solo-card">
-        <div class="tarot-back">
-          <svg class="tarot-sigil" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="50" cy="50" r="40" stroke-dasharray="3 3"/>
-            <polygon points="50,15 80,75 20,75" stroke="#d4af37"/>
-            <polygon points="50,85 80,25 20,25" stroke="#d4af37"/>
-            <circle cx="50" cy="50" r="10" fill="#d4af37" fill-opacity="0.3"/>
-            <circle cx="50" cy="50" r="3" fill="#d4af37"/>
-          </svg>
+    <!-- TOP HEADER -->
+    <div class="top-bar">
+      <div class="top-left-actions">
+        <!-- Sidebar Toggle -->
+        <button class="sidebar-toggle-btn" @click="toggleSidebar" title="展开/收起左侧文稿库 (⌘+B)">
+          <span>{{ isSidebarCollapsed ? '▶ 展开文稿库' : '◀ 文稿库' }}</span>
+        </button>
+
+        <div class="brand-title">
+          <span>THE FORKING DECK</span>
         </div>
       </div>
+
+      <!-- Mode Switcher: 极简光标模式 VS 塔罗动画模式 -->
+      <div class="mode-switcher">
+        <button 
+          class="mode-tab" 
+          :class="{ active: drawMode === 'caret' }" 
+          @click="setDrawMode('caret')"
+          title="按 Tab 直接在光标下方弹出精简菜单"
+        >
+          ⚡️ 简单光标模式
+        </button>
+        <button 
+          class="mode-tab" 
+          :class="{ active: drawMode === 'tarot' }" 
+          @click="setDrawMode('tarot')"
+          title="按 Tab 呈现 3D 旋转分裂塔罗仪式动效"
+        >
+          🎴 塔罗动画模式
+        </button>
+      </div>
+
+      <!-- API Config Button -->
+      <div>
+        <button 
+          class="settings-btn" 
+          :class="{ connected: apiKey }"
+          @click="showSettings = true"
+        >
+          {{ apiKey ? '● API 已就绪' : '○ 未配 API' }}
+        </button>
+      </div>
     </div>
 
-    <!-- Phase 2: Split Into Four Cards -->
-    <div v-if="ceremonyState === 'revealed'" class="split-grid">
+    <!-- THE DOCUMENT CANVAS (FINAL DRAFT) -->
+    <div class="page-container" @click="focusEditor">
+      <!-- Title input in canvas -->
+      <div 
+        ref="titleRef"
+        class="doc-canvas-title"
+        contenteditable="true"
+        spellcheck="false"
+        @input="onTitleInput"
+        @keydown.enter.prevent="focusEditor"
+      ></div>
+
+      <!-- Main Document Editor -->
+      <div 
+        ref="editorRef"
+        class="editor" 
+        contenteditable="true" 
+        spellcheck="false"
+        data-placeholder="在此开始你的剧本或小说创作……写下一句后，按 Tab 或点击光标旁的小牌开启分岔。"
+        @input="onInput"
+        @keyup="updateCaretPosition"
+        @mouseup="updateCaretPosition"
+        @keydown="onKeydown"
+        @blur="onBlur"
+      ></div>
+    </div>
+
+    <div class="tip-bar">
+      左侧文稿库随时新建/切换草稿；当前抽卡：<b style="color:#222;">{{ drawMode === 'caret' ? '【简单光标模式】' : '【塔罗动画模式】' }}</b>。打完一句按 <kbd style="background:#e4e4e0; padding:1px 5px; border-radius:2px; font-weight:bold;">Tab</kbd> 就地抽卡。
+    </div>
+
+    <!-- FLOATING CARET TRIGGER (跟随光标移动的抽卡微小按钮) -->
+    <div 
+      v-if="caretVisible && ceremonyState === 'idle' && !showCaretMenu"
+      class="caret-pill"
+      :class="{ loading: isDrawing }"
+      :style="{ top: caretPos.top + 'px', left: caretPos.left + 'px' }"
+      @mousedown.prevent="triggerDraw"
+      title="点击抽卡 (或按 Tab)"
+    >
+      <span>🎴</span>
+      <span>{{ isDrawing ? '计算中...' : '抽卡 (Tab)' }}</span>
+    </div>
+
+    <!-- ========================================================
+         MODE A: 简单光标模式 - 就地弹出精简菜单 (INLINE CARET POPUP)
+         ======================================================== -->
+    <div 
+      v-if="drawMode === 'caret' && showCaretMenu"
+      class="caret-menu"
+      :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
+      @mousedown.stop
+    >
+      <div class="caret-menu-header">
+        <span>可能的发展方向 ({{ cards.length }})</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span style="font-size:10px; cursor:pointer; text-decoration:underline;" @click="triggerDraw">
+            {{ isDrawing ? '抽卡中...' : '[ 重新抽一批 ]' }}
+          </span>
+          <button class="caret-menu-close" @click="closeCaretMenu">✕</button>
+        </div>
+      </div>
+
       <div 
         v-for="(c, idx) in cards" 
         :key="c.id"
-        class="tarot-split-card"
-        :class="'idx-' + idx"
+        class="caret-card-item"
         @click="selectCard(c)"
       >
-        <div class="tarot-front">
-          <div>
-            <div class="tarot-card-header">
-              <span class="tarot-numeral">{{ ['I', 'II', 'III', 'IV'][idx] || 'V' }}</span>
-              <span class="tarot-type-badge">{{ c.type }} · {{ c.typeName }}</span>
-            </div>
-            <div class="tarot-sentence">{{ c.sentence }}</div>
+        <div class="caret-card-meta">
+          <span class="caret-card-tag">{{ c.type }}</span>
+          <span class="caret-card-tension">{{ c.typeName }} · {{ c.tensionTitle }}</span>
+        </div>
+        <div class="caret-card-text">{{ c.sentence }}</div>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         MODE B: 塔罗动画模式 - 3D旋转与分裂全屏仪式 (TAROT CEREMONY)
+         ======================================================== -->
+    <div 
+      v-if="drawMode === 'tarot' && ceremonyState !== 'idle'" 
+      class="tarot-stage"
+      @click.self="dismissCeremony"
+    >
+      <div class="tarot-subtitle">
+        {{ ceremonyState === 'spinning' ? '— THE WHEEL OF POSSIBILITIES IS TURNING —' : '— 4 DIVERGENT DESTINIES REVEALED —' }}
+      </div>
+
+      <!-- Phase 1: 3D Spinning Tarot Card -->
+      <div v-if="ceremonyState === 'spinning'" class="spinning-arena">
+        <div class="tarot-solo-card">
+          <div class="tarot-back">
+            <svg class="tarot-sigil" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="50" cy="50" r="40" stroke-dasharray="3 3"/>
+              <polygon points="50,15 80,75 20,75" stroke="#d4af37"/>
+              <polygon points="50,85 80,25 20,25" stroke="#d4af37"/>
+              <circle cx="50" cy="50" r="10" fill="#d4af37" fill-opacity="0.3"/>
+              <circle cx="50" cy="50" r="3" fill="#d4af37"/>
+            </svg>
           </div>
-          <div>
-            <div class="tarot-tension">
-              <span>✦</span>
-              <span>{{ c.tensionTitle }}</span>
+        </div>
+      </div>
+
+      <!-- Phase 2: Split Into Four Cards -->
+      <div v-if="ceremonyState === 'revealed'" class="split-grid">
+        <div 
+          v-for="(c, idx) in cards" 
+          :key="c.id"
+          class="tarot-split-card"
+          :class="'idx-' + idx"
+          @click="selectCard(c)"
+        >
+          <div class="tarot-front">
+            <div>
+              <div class="tarot-card-header">
+                <span class="tarot-numeral">{{ ['I', 'II', 'III', 'IV'][idx] || 'V' }}</span>
+                <span class="tarot-type-badge">{{ c.type }} · {{ c.typeName }}</span>
+              </div>
+              <div class="tarot-sentence">{{ c.sentence }}</div>
             </div>
-            <div class="tarot-select-hint">点击采纳并接续 ↵</div>
+            <div>
+              <div class="tarot-tension">
+                <span>✦</span>
+                <span>{{ c.tensionTitle }}</span>
+              </div>
+              <div class="tarot-select-hint">点击采纳并接续 ↵</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tarot-footer-actions">
+        <button v-if="ceremonyState === 'revealed'" class="tarot-btn-esc" @click="startTarotAnimation">
+          ↻ 重新旋转洗牌
+        </button>
+        <button class="tarot-btn-esc" @click="dismissCeremony">
+          ✕ 放弃抽卡 (Esc)
+        </button>
+      </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
+      <div class="modal-box">
+        <div class="modal-title">
+          <span>AI 裂变引擎配置</span>
+          <span style="cursor:pointer;" @click="closeSettings">✕</span>
+        </div>
+
+        <div class="form-group">
+          <label>API Key (DeepSeek / OpenAI 兼容)</label>
+          <input v-model="apiKey" type="password" placeholder="sk-..." class="form-input">
+          <span style="color:#888; font-size:10px; display:block; margin-top:3px;">保存在本地浏览器 LocalStorage。</span>
+        </div>
+
+        <div class="form-group">
+          <label>Base URL</label>
+          <input v-model="apiBaseUrl" type="text" placeholder="https://api.deepseek.com/v1" class="form-input">
+          <span style="color:#888; font-size:10px; display:block; margin-top:3px;">例如 https://api.deepseek.com 或 https://api.deepseek.com/v1</span>
+        </div>
+
+        <div class="form-group">
+          <label>Model</label>
+          <input v-model="apiModel" type="text" placeholder="deepseek-chat" class="form-input">
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn" @click="clearKey">清除 Key</button>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" :disabled="testingApi" @click="testAndDraw">
+              {{ testingApi ? '测试中...' : '测试并抽卡' }}
+            </button>
+            <button class="btn primary" @click="saveAndClose">保存设置</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="tarot-footer-actions">
-      <button v-if="ceremonyState === 'revealed'" class="tarot-btn-esc" @click="startTarotAnimation">
-        ↻ 重新旋转洗牌
-      </button>
-      <button class="tarot-btn-esc" @click="dismissCeremony">
-        ✕ 放弃抽卡 (Esc)
-      </button>
+    <!-- Toast Notification -->
+    <div v-if="toastMsg" class="toast" :class="{ error: toastIsError }">
+      {{ toastMsg }}
     </div>
-  </div>
 
-  <!-- SETTINGS MODAL -->
-  <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
-    <div class="modal-box">
-      <div class="modal-title">
-        <span>AI 裂变引擎配置</span>
-        <span style="cursor:pointer;" @click="closeSettings">✕</span>
-      </div>
-
-      <div class="form-group">
-        <label>API Key (DeepSeek / OpenAI 兼容)</label>
-        <input v-model="apiKey" type="password" placeholder="sk-..." class="form-input">
-        <span style="color:#888; font-size:10px; display:block; margin-top:3px;">保存在本地浏览器 LocalStorage。</span>
-      </div>
-
-      <div class="form-group">
-        <label>Base URL</label>
-        <input v-model="apiBaseUrl" type="text" placeholder="https://api.deepseek.com/v1" class="form-input">
-        <span style="color:#888; font-size:10px; display:block; margin-top:3px;">例如 https://api.deepseek.com 或 https://api.deepseek.com/v1</span>
-      </div>
-
-      <div class="form-group">
-        <label>Model</label>
-        <input v-model="apiModel" type="text" placeholder="deepseek-chat" class="form-input">
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn" @click="clearKey">清除 Key</button>
-        <div style="display:flex; gap:8px;">
-          <button class="btn" :disabled="testingApi" @click="testAndDraw">
-            {{ testingApi ? '测试中...' : '测试并抽卡' }}
-          </button>
-          <button class="btn primary" @click="saveAndClose">保存设置</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div v-if="toastMsg" class="toast" :class="{ error: toastIsError }">
-    {{ toastMsg }}
-  </div>
-
+  </main>
 </div>
 
 <script>
@@ -830,12 +1117,18 @@
   createApp({
     setup() {
       const editorRef = ref(null);
+      const titleRef = ref(null);
       const caretVisible = ref(false);
       const caretPos = ref({ top: 0, left: 0 });
       const menuPos = ref({ top: 0, left: 0 });
-      let savedRange = null; // Exact caret position before modal/overlay opens
+      let savedRange = null;
 
-      // TWO MODES: 'caret' (简单光标就地弹出) vs 'tarot' (塔罗3D旋转分裂动画)
+      // Sidebar & Documents State
+      const isSidebarCollapsed = ref(localStorage.getItem('fd_sidebar_collapsed') === 'true');
+      const documents = ref([]);
+      const currentDocId = ref('');
+
+      // Draw mode: 'caret' or 'tarot'
       const drawMode = ref(localStorage.getItem('fd_draw_mode') || 'tarot');
 
       // State for Simple Caret Mode
@@ -843,7 +1136,7 @@
       const isDrawing = ref(false);
 
       // State for Tarot Animation Mode
-      const ceremonyState = ref('idle'); // 'idle' | 'spinning' | 'revealed'
+      const ceremonyState = ref('idle');
 
       const cards = ref([]);
       const showSettings = ref(false);
@@ -912,6 +1205,161 @@
         setTimeout(() => { toastMsg.value = ''; }, 3000);
       };
 
+      const formatDate = (ts) => {
+        if (!ts) return '';
+        const d = new Date(ts);
+        const m = (d.getMonth() + 1).toString().padStart(2, '0');
+        const day = d.getDate().toString().padStart(2, '0');
+        const h = d.getHours().toString().padStart(2, '0');
+        const min = d.getMinutes().toString().padStart(2, '0');
+        return `${m}/${day} ${h}:${min}`;
+      };
+
+      // ========================================================
+      // DOCUMENT STORAGE & ACTIONS
+      // ========================================================
+      const loadDocuments = () => {
+        const stored = localStorage.getItem('fork_deck_documents');
+        if (stored) {
+          try {
+            documents.value = JSON.parse(stored);
+          } catch (e) {
+            documents.value = [];
+          }
+        }
+
+        if (!documents.value || documents.value.length === 0) {
+          // Initialize first default draft
+          const initialDoc = {
+            id: 'doc_' + Date.now(),
+            title: '尘封木门与分岔',
+            content: '他推开那扇尘封已久的木门，闻到了一股潮湿的墨水味。',
+            updatedAt: Date.now()
+          };
+          documents.value = [initialDoc];
+        }
+
+        const lastActiveId = localStorage.getItem('fork_deck_current_doc_id');
+        const activeExists = documents.value.some(d => d.id === lastActiveId);
+        currentDocId.value = activeExists ? lastActiveId : documents.value[0].id;
+      };
+
+      const saveDocumentsToStorage = () => {
+        localStorage.setItem('fork_deck_documents', JSON.stringify(documents.value));
+        localStorage.setItem('fork_deck_current_doc_id', currentDocId.value);
+      };
+
+      const getCurrentDoc = () => {
+        return documents.value.find(d => d.id === currentDocId.value);
+      };
+
+      const syncEditorWithCurrentDoc = () => {
+        const doc = getCurrentDoc();
+        if (!doc) return;
+        if (titleRef.value) {
+          titleRef.value.innerText = doc.title || '';
+        }
+        if (editorRef.value) {
+          editorRef.value.innerText = doc.content || '';
+        }
+        nextTick(() => {
+          updateCaretPosition();
+        });
+      };
+
+      const createNewDoc = () => {
+        const newDoc = {
+          id: 'doc_' + Date.now(),
+          title: '未命名草稿 ' + (documents.value.length + 1),
+          content: '',
+          updatedAt: Date.now()
+        };
+        documents.value.unshift(newDoc);
+        currentDocId.value = newDoc.id;
+        saveDocumentsToStorage();
+        syncEditorWithCurrentDoc();
+        showToast('已新建空白草稿');
+        nextTick(() => {
+          if (editorRef.value) editorRef.value.focus();
+        });
+      };
+
+      const selectDoc = (docId) => {
+        if (currentDocId.value === docId) return;
+        // Save current first
+        saveCurrentDocContent();
+        currentDocId.value = docId;
+        saveDocumentsToStorage();
+        syncEditorWithCurrentDoc();
+        closeCaretMenu();
+        dismissCeremony();
+        nextTick(focusEditor);
+      };
+
+      const deleteDoc = (docId) => {
+        if (documents.value.length <= 1) {
+          showToast('至少保留一篇文稿', true);
+          return;
+        }
+        const idx = documents.value.findIndex(d => d.id === docId);
+        if (idx !== -1) {
+          documents.value.splice(idx, 1);
+          if (currentDocId.value === docId) {
+            currentDocId.value = documents.value[0].id;
+            syncEditorWithCurrentDoc();
+          }
+          saveDocumentsToStorage();
+          showToast('已删除该文稿');
+        }
+      };
+
+      const saveCurrentDocContent = () => {
+        const doc = getCurrentDoc();
+        if (!doc) return;
+        if (editorRef.value) doc.content = editorRef.value.innerText;
+        if (titleRef.value) {
+          const t = titleRef.value.innerText.trim();
+          if (t) doc.title = t;
+        }
+        doc.updatedAt = Date.now();
+        saveDocumentsToStorage();
+      };
+
+      const onTitleInput = () => {
+        const doc = getCurrentDoc();
+        if (!doc || !titleRef.value) return;
+        doc.title = titleRef.value.innerText.trim() || '未命名草稿';
+        doc.updatedAt = Date.now();
+        saveDocumentsToStorage();
+      };
+
+      const onInput = () => {
+        const doc = getCurrentDoc();
+        if (doc && editorRef.value) {
+          doc.content = editorRef.value.innerText;
+          // If title was default or empty, auto-generate from first line
+          if ((!doc.title || doc.title.startsWith('未命名草稿')) && doc.content.trim()) {
+            const firstSentence = doc.content.trim().split(/[。？！?!…\n]/)[0].slice(0, 16);
+            if (firstSentence && titleRef.value) {
+              doc.title = firstSentence;
+              titleRef.value.innerText = firstSentence;
+            }
+          }
+          doc.updatedAt = Date.now();
+          saveDocumentsToStorage();
+        }
+        closeCaretMenu();
+        updateCaretPosition();
+      };
+
+      const toggleSidebar = () => {
+        isSidebarCollapsed.value = !isSidebarCollapsed.value;
+        localStorage.setItem('fd_sidebar_collapsed', isSidebarCollapsed.value ? 'true' : 'false');
+        nextTick(() => {
+          updateCaretPosition();
+        });
+      };
+
       const setDrawMode = (mode) => {
         drawMode.value = mode;
         localStorage.setItem('fd_draw_mode', mode);
@@ -962,13 +1410,8 @@
         }
       };
 
-      const onInput = () => {
-        closeCaretMenu();
-        updateCaretPosition();
-      };
-
       const onBlur = () => {
-        // retain
+        saveCurrentDocContent();
       };
 
       const focusEditor = () => {
@@ -985,7 +1428,6 @@
         updateCaretPosition();
       };
 
-      // Extract sentence before cursor
       const getSentenceAtCursor = () => {
         if (!editorRef.value) return '';
         const sel = window.getSelection();
@@ -1060,7 +1502,6 @@
         return data.branches || [];
       };
 
-      // Lock caret range before popup / overlay opens
       const lockCaretRange = () => {
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0 && editorRef.value.contains(sel.anchorNode)) {
@@ -1073,7 +1514,6 @@
         }
       };
 
-      // TRIGGER DRAW: DISPATCHES TO EITHER CARET MODE OR TAROT MODE
       const triggerDraw = () => {
         if (drawMode.value === 'caret') {
           startCaretPopup();
@@ -1196,11 +1636,19 @@
         sel.addRange(newRange);
         savedRange = newRange.cloneRange();
 
+        saveCurrentDocContent();
         updateCaretPosition();
         showToast('✨ 已采纳分支并续写入文');
       };
 
       const onKeydown = (e) => {
+        // Cmd/Ctrl + B toggles sidebar
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+          e.preventDefault();
+          toggleSidebar();
+          return;
+        }
+
         if (e.key === 'Tab') {
           e.preventDefault();
           triggerDraw();
@@ -1274,14 +1722,14 @@
       window.addEventListener('scroll', updateCaretPosition);
 
       onMounted(() => {
-        if (editorRef.value) {
-          editorRef.value.innerText = '他推开那扇尘封已久的木门，闻到了一股潮湿的墨水味。';
-          focusEditor();
-        }
+        loadDocuments();
+        syncEditorWithCurrentDoc();
+        focusEditor();
       });
 
       return {
         editorRef,
+        titleRef,
         caretVisible,
         caretPos,
         menuPos,
@@ -1297,6 +1745,15 @@
         apiKey,
         apiBaseUrl,
         apiModel,
+        isSidebarCollapsed,
+        documents,
+        currentDocId,
+        formatDate,
+        createNewDoc,
+        selectDoc,
+        deleteDoc,
+        toggleSidebar,
+        onTitleInput,
         setDrawMode,
         onInput,
         onKeydown,
