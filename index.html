@@ -314,20 +314,43 @@
     }
 
     /* Document Title In Canvas */
-    .doc-canvas-title {
-      font-size: 18px;
+    .doc-canvas-title-wrapper {
+      width: 100%;
+      margin-bottom: 22px;
+    }
+
+    .doc-canvas-title-input {
+      width: 100%;
+      font-size: 20px;
       font-weight: 700;
       color: #111;
-      margin-bottom: 24px;
-      padding-bottom: 12px;
+      padding: 4px 0 10px 0;
+      border: none;
       border-bottom: 1px solid #ecece8;
       outline: none;
+      background: transparent;
       font-family: 'Courier Prime', 'Noto Serif SC', serif;
+      transition: border-bottom-color 0.2s ease;
     }
-    .doc-canvas-title:empty::before {
-      content: '在此键入草稿标题...';
+    .doc-canvas-title-input:focus {
+      border-bottom-color: #d4af37;
+    }
+    .doc-canvas-title-input::placeholder {
       color: #bbb;
-      pointer-events: none;
+      font-weight: normal;
+    }
+
+    .doc-item-title-input {
+      width: 100%;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      background: #fff;
+      border: 1px solid #d4af37;
+      border-radius: 3px;
+      padding: 1px 4px;
+      outline: none;
+      font-family: inherit;
     }
 
     .editor {
@@ -853,7 +876,23 @@
         @click="selectDoc(doc.id)"
       >
         <div class="doc-item-title-row">
-          <div class="doc-item-title">{{ doc.title || '未命名草稿' }}</div>
+          <input 
+            v-if="renamingDocId === doc.id"
+            v-model="doc.title"
+            @blur="finishRename(doc)"
+            @keydown.enter="finishRename(doc)"
+            @click.stop
+            class="doc-item-title-input"
+            ref="renameInputRef"
+          />
+          <div 
+            v-else 
+            class="doc-item-title" 
+            @dblclick.stop="startRename(doc)"
+            title="双击重命名"
+          >
+            {{ doc.title || '未命名草稿' }}
+          </div>
           <button 
             v-if="documents.length > 1"
             class="doc-delete-btn" 
@@ -925,16 +964,19 @@
     </div>
 
     <!-- THE DOCUMENT CANVAS (FINAL DRAFT) -->
-    <div class="page-container" @click="focusEditor">
+    <div class="page-container" @click.self="focusEditor">
       <!-- Title input in canvas -->
-      <div 
-        ref="titleRef"
-        class="doc-canvas-title"
-        contenteditable="true"
-        spellcheck="false"
-        @input="onTitleInput"
-        @keydown.enter.prevent="focusEditor"
-      ></div>
+      <div class="doc-canvas-title-wrapper" @click.stop>
+        <input 
+          type="text"
+          v-model="currentDocTitle"
+          @input="onTitleChange"
+          @keydown.enter.prevent="focusEditor"
+          class="doc-canvas-title-input"
+          placeholder="在此键入草稿标题..."
+          spellcheck="false"
+        />
+      </div>
 
       <!-- Main Document Editor -->
       <div 
@@ -1117,7 +1159,8 @@
   createApp({
     setup() {
       const editorRef = ref(null);
-      const titleRef = ref(null);
+      const currentDocTitle = ref('');
+      const renamingDocId = ref('');
       const caretVisible = ref(false);
       const caretPos = ref({ top: 0, left: 0 });
       const menuPos = ref({ top: 0, left: 0 });
@@ -1262,9 +1305,7 @@
       const syncEditorWithCurrentDoc = () => {
         const doc = getCurrentDoc();
         if (!doc) return;
-        if (titleRef.value) {
-          titleRef.value.innerText = doc.title || '';
-        }
+        currentDocTitle.value = doc.title || '';
         if (editorRef.value) {
           editorRef.value.innerText = doc.content || '';
         }
@@ -1282,6 +1323,7 @@
         };
         documents.value.unshift(newDoc);
         currentDocId.value = newDoc.id;
+        currentDocTitle.value = newDoc.title;
         saveDocumentsToStorage();
         syncEditorWithCurrentDoc();
         showToast('已新建空白草稿');
@@ -1292,7 +1334,6 @@
 
       const selectDoc = (docId) => {
         if (currentDocId.value === docId) return;
-        // Save current first
         saveCurrentDocContent();
         currentDocId.value = docId;
         saveDocumentsToStorage();
@@ -1319,22 +1360,34 @@
         }
       };
 
-      const saveCurrentDocContent = () => {
-        const doc = getCurrentDoc();
-        if (!doc) return;
-        if (editorRef.value) doc.content = editorRef.value.innerText;
-        if (titleRef.value) {
-          const t = titleRef.value.innerText.trim();
-          if (t) doc.title = t;
+      const startRename = (doc) => {
+        renamingDocId.value = doc.id;
+      };
+
+      const finishRename = (doc) => {
+        renamingDocId.value = '';
+        if (doc.id === currentDocId.value) {
+          currentDocTitle.value = doc.title;
         }
         doc.updatedAt = Date.now();
         saveDocumentsToStorage();
       };
 
-      const onTitleInput = () => {
+      const saveCurrentDocContent = () => {
         const doc = getCurrentDoc();
-        if (!doc || !titleRef.value) return;
-        doc.title = titleRef.value.innerText.trim() || '未命名草稿';
+        if (!doc) return;
+        if (editorRef.value) doc.content = editorRef.value.innerText;
+        if (currentDocTitle.value.trim()) {
+          doc.title = currentDocTitle.value.trim();
+        }
+        doc.updatedAt = Date.now();
+        saveDocumentsToStorage();
+      };
+
+      const onTitleChange = () => {
+        const doc = getCurrentDoc();
+        if (!doc) return;
+        doc.title = currentDocTitle.value;
         doc.updatedAt = Date.now();
         saveDocumentsToStorage();
       };
@@ -1343,12 +1396,12 @@
         const doc = getCurrentDoc();
         if (doc && editorRef.value) {
           doc.content = editorRef.value.innerText;
-          // If title was default or empty, auto-generate from first line
-          if ((!doc.title || doc.title.startsWith('未命名草稿')) && doc.content.trim()) {
+          // Only auto-generate title if user has not entered any title yet
+          if (!doc.title || doc.title.trim() === '') {
             const firstSentence = doc.content.trim().split(/[。？！?!…\n]/)[0].slice(0, 16);
-            if (firstSentence && titleRef.value) {
+            if (firstSentence) {
               doc.title = firstSentence;
-              titleRef.value.innerText = firstSentence;
+              currentDocTitle.value = firstSentence;
             }
           }
           doc.updatedAt = Date.now();
@@ -1883,7 +1936,8 @@
 
       return {
         editorRef,
-        titleRef,
+        currentDocTitle,
+        renamingDocId,
         caretVisible,
         caretPos,
         menuPos,
@@ -1906,8 +1960,10 @@
         createNewDoc,
         selectDoc,
         deleteDoc,
+        startRename,
+        finishRename,
         toggleSidebar,
-        onTitleInput,
+        onTitleChange,
         setDrawMode,
         onInput,
         onKeydown,
